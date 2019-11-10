@@ -26,6 +26,8 @@ Improvements
   which hides pages like the contribution list and timetable until
   the event organizers publish the contribution list. (:issue:`4095`)
 - Add ICS export for information in the user dashboard (:issue:`4057`)
+- Allow data syncing with multipass providers which do not support
+  refreshing identity information
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
@@ -54,6 +56,8 @@ Bugfixes
 - Fix an issue causing errors when using translations for languages with no plural
   forms (like Chinese).
 - Fix creating rooms without touching the longitude/latitude fields (:issue:`4115`)
+- Fix error in HTTP API when Basic auth headers are present (:issue:`4123`,
+  thanks :user:`uxmaster`)
 
 Version 2.2.4
 -------------
