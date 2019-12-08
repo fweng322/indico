@@ -170,7 +170,9 @@ CheckboxAdapter.propTypes = {
 };
 
 function DropdownAdapter(props) {
-  const {input, required, clearable, isMultiple, ...rest} = props;
+  const {input, required, clearable, isMultiple, width, ...rest} = props;
+  const fieldProps = width !== null ? {width} : {};
+
   return (
     <FormFieldAdapter
       input={input}
@@ -181,6 +183,7 @@ function DropdownAdapter(props) {
       multiple={isMultiple}
       undefinedValue={isMultiple ? [] : null}
       selectOnBlur={false}
+      fieldProps={fieldProps}
       getValue={(__, {value}) => value}
     />
   );
@@ -191,12 +194,14 @@ DropdownAdapter.propTypes = {
   required: PropTypes.bool,
   clearable: PropTypes.bool,
   isMultiple: PropTypes.bool,
+  width: PropTypes.number,
 };
 
 DropdownAdapter.defaultProps = {
   required: false,
   clearable: undefined,
   isMultiple: false,
+  width: null,
 };
 
 /**
@@ -406,7 +411,14 @@ FinalDropdown.defaultProps = {
 /**
  * A submit button that will update according to the final-form state.
  */
-export function FinalSubmitButton({label, form, disabledUntilChange}) {
+export function FinalSubmitButton({
+  label,
+  form,
+  disabledUntilChange,
+  activeSubmitButton,
+  color,
+  onClick,
+}) {
   return (
     <FormSpy subscription={{hasValidationErrors: true, pristine: true, submitting: true}}>
       {({hasValidationErrors, pristine, submitting}) => (
@@ -414,9 +426,11 @@ export function FinalSubmitButton({label, form, disabledUntilChange}) {
           type="submit"
           form={form}
           disabled={hasValidationErrors || (disabledUntilChange && pristine) || submitting}
-          loading={submitting}
-          primary
+          loading={submitting && activeSubmitButton}
+          primary={color === null}
           content={label}
+          color={color}
+          onClick={onClick}
         />
       )}
     </FormSpy>
@@ -427,9 +441,15 @@ FinalSubmitButton.propTypes = {
   label: PropTypes.string.isRequired,
   form: PropTypes.string,
   disabledUntilChange: PropTypes.bool,
+  activeSubmitButton: PropTypes.bool,
+  color: PropTypes.string,
+  onClick: PropTypes.func,
 };
 
 FinalSubmitButton.defaultProps = {
   form: null,
   disabledUntilChange: true,
+  activeSubmitButton: true,
+  color: null,
+  onClick: null,
 };

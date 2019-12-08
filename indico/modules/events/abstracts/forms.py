@@ -8,6 +8,7 @@
 from __future__ import unicode_literals
 
 from datetime import time
+from itertools import groupby
 
 from flask import request, session
 from wtforms.ext.sqlalchemy.fields import QuerySelectField
@@ -38,7 +39,7 @@ from indico.web.forms.fields import (EditableFileField, EmailListField, HiddenEn
                                      IndicoRadioField, PrincipalField, PrincipalListField)
 from indico.web.forms.util import inject_validators
 from indico.web.forms.validators import HiddenUnless, LinkedDateTime, SoftLength, UsedIf, WordCount
-from indico.web.forms.widgets import SwitchWidget
+from indico.web.forms.widgets import JinjaWidget, SwitchWidget
 
 
 def make_review_form(event):
@@ -199,7 +200,8 @@ class AbstractJudgmentFormBase(IndicoForm):
               'merge_persons', 'judgment_comment', 'send_notifications')
 
     accepted_track = QuerySelectField(_("Track"), [HiddenUnless('judgment', AbstractAction.accept)],
-                                      get_label='title', allow_blank=True, blank_text=_("Choose a track..."),
+                                      get_label=lambda obj: obj.title_with_group,
+                                      allow_blank=True, blank_text=_("Choose a track..."),
                                       description=_("The abstract will be accepted in this track"))
     accepted_contrib_type = QuerySelectField(_("Contribution type"), [HiddenUnless('judgment', AbstractAction.accept)],
                                              get_label=lambda x: x.name.title(), allow_blank=True,
@@ -534,8 +536,27 @@ class _SingleChoiceQuerySelectMultipleField(IndicoQuerySelectMultipleField):
         super(_SingleChoiceQuerySelectMultipleField, self).process_formdata(valuelist)
 
 
+class _SingleChoiceQuerySelectMultipleFieldGrouped(_SingleChoiceQuerySelectMultipleField):
+    widget = JinjaWidget('events/abstracts/forms/select_grouped_widget.html')
+
+    def __init__(self, *args, **kwargs):
+        self.get_group = kwargs.pop('get_group', lambda x: x)
+        super(_SingleChoiceQuerySelectMultipleFieldGrouped, self).__init__(*args, **kwargs)
+
+    def get_grouped_choices(self):
+        return groupby(list(self.iter_choices()), key=lambda x: x[3:])  # group by (group, group label)
+
+    def iter_choices(self):
+        yield ('__None', self.blank_text, self.data is None, None, None)
+        for pk, obj in self._get_object_list():
+            yield (pk, self.get_label(obj), obj in self.data, self.get_group(obj),
+                   self.get_label(self.get_group(obj)) if self.get_group(obj) else None)
+
+
 class SingleTrackMixin(object):
-    submitted_for_tracks = _SingleChoiceQuerySelectMultipleField(_("Track"), get_label='title', collection_class=set)
+    submitted_for_tracks = _SingleChoiceQuerySelectMultipleFieldGrouped(_("Track"), get_label='title',
+                                                                        collection_class=set,
+                                                                        get_group=lambda obj: obj.track_group)
 
     def __init__(self, *args, **kwargs):
         event = kwargs['event']
@@ -549,8 +570,26 @@ class SingleTrackMixin(object):
         self.submitted_for_tracks.query = Track.query.with_parent(event).order_by(Track.position)
 
 
+class _MultiChoiceQuerySelectMultipleFieldGrouped(IndicoQuerySelectMultipleField):
+    widget = JinjaWidget('events/abstracts/forms/checkbox_group_grouped_widget.html')
+
+    def __init__(self, *args, **kwargs):
+        self.get_group = kwargs.pop('get_group', lambda x: x)
+        super(_MultiChoiceQuerySelectMultipleFieldGrouped, self).__init__(*args, **kwargs)
+
+    def get_grouped_choices(self):
+        return groupby(list(self.iter_choices()), key=lambda x: x[3:])  # group by (group, group label)
+
+    def iter_choices(self):
+        for pk, obj in self._get_object_list():
+            yield (pk, self.get_label(obj), obj in self.data, self.get_group(obj),
+                   self.get_label(self.get_group(obj)) if self.get_group(obj) else None)
+
+
 class MultiTrackMixin(object):
-    submitted_for_tracks = IndicoQuerySelectMultipleCheckboxField(_("Tracks"), get_label='title', collection_class=set)
+    submitted_for_tracks = _MultiChoiceQuerySelectMultipleFieldGrouped(_("Tracks"), get_label='title',
+                                                                       collection_class=set,
+                                                                       get_group=lambda obj: obj.track_group)
 
     def __init__(self, *args, **kwargs):
         event = kwargs['event']
@@ -630,7 +669,9 @@ class AbstractCommentForm(IndicoForm):
 
 
 class AbstractReviewedForTracksForm(IndicoForm):
-    reviewed_for_tracks = IndicoQuerySelectMultipleCheckboxField(_("Tracks"), get_label='title', collection_class=set)
+    reviewed_for_tracks = _MultiChoiceQuerySelectMultipleFieldGrouped(_("Tracks"), get_label='title',
+                                                                      collection_class=set,
+                                                                      get_group=lambda obj: obj.track_group)
 
     def __init__(self, *args, **kwargs):
         event = kwargs.pop('event')

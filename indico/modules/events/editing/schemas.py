@@ -8,16 +8,26 @@
 from __future__ import unicode_literals
 
 from markupsafe import escape
-from marshmallow import fields, post_dump
+from marshmallow import ValidationError, fields, post_dump, validates_schema
+from marshmallow_enum import EnumField
 
 from indico.core.marshmallow import mm
+from indico.modules.events.contributions.schemas import ContributionSchema
 from indico.modules.events.editing.models.comments import EditingRevisionComment
 from indico.modules.events.editing.models.editable import Editable
 from indico.modules.events.editing.models.file_types import EditingFileType
 from indico.modules.events.editing.models.revision_files import EditingRevisionFile
-from indico.modules.events.editing.models.revisions import EditingRevision
+from indico.modules.events.editing.models.revisions import EditingRevision, InitialRevisionState
 from indico.modules.events.editing.models.tags import EditingTag
 from indico.modules.users.schemas import UserSchema
+from indico.util.struct.enum import IndicoEnum
+from indico.web.flask.util import url_for
+
+
+class RevisionState(mm.Schema):
+    title = fields.String()
+    name = fields.String()
+    css_class = fields.String()
 
 
 class EditingFileTypeSchema(mm.ModelSchema):
@@ -47,36 +57,84 @@ class EditingRevisionFileSchema(mm.ModelSchema):
     filename = fields.String(attribute='file.filename')
     size = fields.Int(attribute='file.size')
     content_type = fields.String(attribute='file.content_type')
-    download_url = fields.Constant('#')  # TODO: point to an endpoint that allows downloading paper files
+    download_url = fields.String()
 
 
 class EditingRevisionCommentSchema(mm.ModelSchema):
     class Meta:
         model = EditingRevisionComment
-        fields = ('id', 'user', 'created_dt', 'modified_dt', 'internal', 'system', 'text', 'html')
+        fields = ('id', 'user', 'created_dt', 'modified_dt', 'internal', 'system', 'text', 'html', 'can_modify',
+                  'modify_comment_url', 'revision_id')
 
+    revision_id = fields.Int(attribute='revision.id')
     user = fields.Nested(UserSchema, only=('id', 'avatar_bg_color', 'full_name'))
     html = fields.Function(lambda comment: escape(comment.text))
-    # TODO: filter out internal comments depending on who's viewing
+    can_modify = fields.Function(lambda comment, ctx: comment.can_modify(ctx.get('user')))
+    modify_comment_url = fields.Function(lambda comment: url_for('event_editing.api_edit_comment', comment))
 
 
 class EditingRevisionSchema(mm.ModelSchema):
     class Meta:
         model = EditingRevision
         fields = ('id', 'created_dt', 'submitter', 'editor', 'files', 'comment', 'comment_html', 'comments',
-                  'initial_state', 'final_state', 'tags')
+                  'initial_state', 'final_state', 'tags', 'create_comment_url', 'download_files_url', 'review_url',
+                  'confirm_url')
 
     comment_html = fields.Function(lambda rev: escape(rev.comment))
     submitter = fields.Nested(UserSchema, only=('id', 'avatar_bg_color', 'full_name'))
     editor = fields.Nested(UserSchema, only=('id', 'avatar_bg_color', 'full_name'))
     files = fields.List(fields.Nested(EditingRevisionFileSchema))
-    comments = fields.List(fields.Nested(EditingRevisionCommentSchema))
+    comments = fields.Method('_get_comments')
+    initial_state = fields.Nested(RevisionState)
+    final_state = fields.Nested(RevisionState)
+    create_comment_url = fields.Function(lambda revision: url_for('event_editing.api_create_comment', revision))
+    download_files_url = fields.Function(lambda revision: url_for('event_editing.revision_files_export', revision))
+    review_url = fields.Function(lambda revision: url_for('event_editing.api_review_editable', revision))
+    confirm_url = fields.Method('_get_confirm_url')
+
+    def _get_confirm_url(self, revision):
+        if revision.initial_state == InitialRevisionState.needs_submitter_confirmation and not revision.final_state:
+            return url_for('event_editing.api_confirm_changes', revision)
+
+    def _get_comments(self, revision):
+        current_user = self.context.get('user')
+        event = revision.editable.event
+        comments = [comment for comment in revision.comments
+                    if not comment.internal or event.can_manage(current_user, permission='paper_editing')]
+        return EditingRevisionCommentSchema(context=self.context).dump(comments, many=True)
 
 
 class EditableSchema(mm.ModelSchema):
     class Meta:
         model = Editable
-        fields = ('id', 'type', 'editor', 'revisions')
+        fields = ('id', 'type', 'editor', 'revisions', 'contribution', 'can_comment', 'can_create_internal_comments')
 
+    contribution = fields.Nested(ContributionSchema)
     editor = fields.Nested(UserSchema, only=('id', 'avatar_bg_color', 'full_name'))
     revisions = fields.List(fields.Nested(EditingRevisionSchema))
+    can_comment = fields.Function(lambda editable, ctx: editable.can_comment(ctx.get('user')))
+    can_create_internal_comments = fields.Function(
+        lambda editable, ctx: editable.contribution.event.can_manage(ctx.get('user'), permission='paper_editing')
+    )
+
+
+class EditingReviewAction(IndicoEnum):
+    accept = 'accept'
+    reject = 'reject'
+    update = 'update'
+    request_update = 'request_update'
+
+
+class ReviewEditableArgs(mm.Schema):
+    action = EnumField(EditingReviewAction, required=True)
+    comment = fields.String(missing='')
+
+    @validates_schema(skip_on_field_errors=True)
+    def validate_everything(self, data):
+        if data['action'] != EditingReviewAction.accept and not data['comment']:
+            raise ValidationError('This field is required', 'comment')
+
+
+class EditingConfirmationAction(IndicoEnum):
+    accept = 'accept'
+    reject = 'reject'

@@ -7,23 +7,24 @@
  */
 
 /* For the multi-tab control */
-.tabSelected {border-top: gray solid;
-                border-left: gray solid;
-                border-right: gray solid}
-.tab { border: gray solid;
-        background-color: gray }
+.tabSelected {
+    border-top: gray solid;
+    border-left: gray solid;
+    border-right: gray solid
+}
 
-label.disabled{
-    color: gray;
+.tab {
+    border: gray solid;
+    background-color: gray
 }
 
 .subtitle {
-   font-weight: normal;
-   font-size: 16px;
-   color: #777777;
-   padding: 3px;
-   margin-top: 2px;
-   margin-bottom: 2px;
+    font-weight: normal;
+    font-size: 16px;
+    color: #777777;
+    padding: 3px;
+    margin-top: 2px;
+    margin-bottom: 2px;
 }
 
 /* ListWidget, list of users styles */
@@ -69,7 +70,7 @@ td.searchUsersGroupsPanel {
     width: 450px;
     padding-left: 10px;
     padding-top: 10px;
-    padding-right:10px;
+    padding-right: 10px;
 }
 
 td.suggestedUsersPanel {
@@ -78,36 +79,17 @@ td.suggestedUsersPanel {
     border-left: 1px dotted #CCCCCC;
 }
 
-.arrowExpandIcon
-{
+/* TODO: remove when replacing the old search plugin */
+.arrowExpandIcon {
     background: transparent url('static:images/menu_arrow_black.png') scroll no-repeat center center;
     font-weight: normal;
     vertical-align: middle;
-    display:block;
+    display: block;
     width: 20px;
     height: 17px;
     float: right;
     cursor: pointer;
 }
-
-/* Breadcrumb styles */
-
-.path img {
-    padding-right: 5px;
-    padding-left: 7px;
-}
-
-/* Root Page */
-
-.container
-{
-    background: #FFFFFF;
-    margin-bottom: 10px;
-    margin: 15px 80px 30px 60px;
-    /*overflow: visible;*/
-    overflow: hidden;
-}
-
 
 a.active {
     font-weight: bold;
@@ -138,7 +120,7 @@ ul.tabList {
     border-bottom: 1px solid #777777;
 }
 
-ul.tabList li{
+ul.tabList li {
     display: inline;
     position: relative;
     padding-bottom: 1px;
@@ -147,7 +129,7 @@ ul.tabList li{
     font-weight: bold;
 }
 
-.tabSelected  {
+.tabSelected {
     color: #E25300;
     background: #F2F2F2;
     border: 1px solid #777777;
@@ -157,7 +139,7 @@ ul.tabList li{
     margin-right: 1px;
 }
 
-.tabSelected  a, .tabSelected  span {
+.tabSelected a, .tabSelected span {
     padding-top: 3px;
     color: #555555;
     font-size: 12px;
@@ -184,8 +166,6 @@ div.tabScrollArrow {
 
 div.tabGradient {
     background: white url(static:images/tab_bg.png) repeat-x scroll 0 -60px;
-    /*border-left: 1px solid #777777;
-    border-right: 1px solid #777777;*/
     height: 20px;
 }
 
@@ -207,7 +187,7 @@ div.tabBorderGradient {
     cursor: pointer;
 }
 
-.tabUnselected a, .tabUnselected  span {
+.tabUnselected a, .tabUnselected span {
     color: #4c6a83;
     font-weight: normal;
     font-size: 12px;
@@ -222,8 +202,8 @@ div.tabBorderGradient {
     -moz-border-radius: 3px;
     border-radius: 3px;
     margin: 10px 10px 0 0;
-    box-shadow:1px 1px 1px #000;
-    -moz-box-shadow:1px 1px 1px #000;
+    box-shadow: 1px 1px 1px #000;
+    -moz-box-shadow: 1px 1px 1px #000;
     z-index: 1;
 }
 
@@ -253,32 +233,27 @@ div.tabBorderGradient {
     background: #555;
 }
 
-ul.tabList li.hiddenTab
-{
-    display: none;
-}
-
 .popUpLabel {
-   text-align: right;
-   font-size: 13px;
-   font-family: Verdana, Arial;
-   color: #523D04;
-   font-weight: normal;
-   padding-right: 5px;
-   padding-bottom: 3px;
+    text-align: right;
+    font-size: 13px;
+    font-family: Verdana, Arial;
+    color: #523D04;
+    font-weight: normal;
+    padding-right: 5px;
+    padding-bottom: 3px;
 }
 
 .popUpTdContent {
-   font-weight: normal;
-   padding-bottom: 3px;
-   color: black;
+    font-weight: normal;
+    padding-bottom: 3px;
+    color: black;
 }
 
 .tooltip {
-   background-color: #FFFFFF;
-   border: 1px solid #000000;
-   color: #000000;
- }
+    background-color: #FFFFFF;
+    border: 1px solid #000000;
+    color: #000000;
+}
 
 .invalid {
     -moz-appearance: none;
@@ -294,14 +269,14 @@ ul.tabList li.hiddenTab
 }
 
 .tooltipError {
-   max-width: 300px;
-   padding: 5px;
-   border: 1px solid #777;
-   color: #ad1f1f;
-   background: white;
-   -moz-box-shadow: 2px 2px 2px #444;
-   -webkit-box-shadow: 2px 2px 2px #444;
-   box-shadow: 2px 2px 2px #444;
+    max-width: 300px;
+    padding: 5px;
+    border: 1px solid #777;
+    color: #ad1f1f;
+    background: white;
+    -moz-box-shadow: 2px 2px 2px #444;
+    -webkit-box-shadow: 2px 2px 2px #444;
+    box-shadow: 2px 2px 2px #444;
 }
 
 ul.errorList {
@@ -318,13 +293,6 @@ span.errorTitle {
     font-size: medium;
     font-weight: bold;
 }
-
-div.warningExplanation {
-    margin-top: 10px;
-    color: #555;
-    text-align: left;
-}
-
 
 ul.warningLevel0 {
     margin: 0;
@@ -366,30 +334,8 @@ div.exclusivePopup .printLink {
     -moz-border-radius-topright: 3px;
 }
 
-div.balloonPopupCloseButton {
-    position: absolute;
-    cursor: pointer;
-    top: 10px;
-    right: 10px;
-    background-image: url('static:images/popup_close_button.png');
-    width: 15px;
-    height: 15px;
-}
-
-.loadingPopup {
-    background: transparent url('static:images/load_lightblue.gif') scroll no-repeat center center;
-    min-width: 130px;
-    height: 70px;
-}
-.loadingPopup .text {
-    color: #DDD;
-    text-align: center;
-    font-family: Verdana;
-    padding-top: 80px;
-}
-
 div.ui-draggable.timetableBlock {
-   /* border: 3px solid #9F883B;*/
+    /* border: 3px solid #9F883B;*/
 }
 
 div.ui-draggable.timetableBlock:hover {
@@ -433,12 +379,6 @@ div.timetableBlockMaterial {
     background: transparent url(static:images/material_folder.png) scroll no-repeat 3px 3px;
 }
 
-div.timetableBlockMaterial:hover, div.timetableBlockMaterialActive {
-    border: 1px solid #777;
-    margin: 1px;
-    background-color: white;
-}
-
 div.timetableBlockTime {
     position: absolute;
     bottom: 4px;
@@ -447,7 +387,7 @@ div.timetableBlockTime {
     font-size: 11px;
 }
 
-div.timetableBlockTimeDiscreet{
+div.timetableBlockTimeDiscreet {
     float: left;
     margin: 4px;
     margin-right: 6px;
@@ -472,51 +412,6 @@ div.timetableBlockConvener {
     font-size: 11px;
 }
 
-div.timetableBlockContribs {
-    margin: 4px;
-    border: 1px solid #CCC;
-}
-
-span.sessionRenameEntry, span.sessionRenameValue {
-    color: #888888;
-    font-weight: bold;
-}
-
-div.exclusivePopup {
-    background-color: white;
-    display: block;
-    min-width: 250px;
-    padding: 15px;
-    overflow: hidden;
-}
-
-div.ui-dialog-titlebar {
-    padding: 0.4em 15px !important;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-div.exclusivePopupTopBg {
-    background-color: #F8F8F8;
-    -moz-border-radius: 10px;
-    -webkit-border-radius: 10px;
-}
-
-div.exclusivePopup .printLink {
-    font-size: 13px;
-    position: absolute;
-    bottom: 0px;
-    right: 45px;
-    border: 1px solid #aaa;
-    border-bottom-color: white;
-    background: white;
-
-    -webkit-border-top-right-radius: 3px;
-    -webkit-border-top-left-radius: 3px;
-    -moz-border-radius-topleft: 3px;
-    -moz-border-radius-topright: 3px;
-}
-
 div.balloonPopupCloseButton {
     position: absolute;
     cursor: pointer;
@@ -532,6 +427,7 @@ div.balloonPopupCloseButton {
     min-width: 130px;
     height: 70px;
 }
+
 .loadingPopup .text {
     color: #DDD;
     text-align: center;
@@ -542,6 +438,7 @@ div.balloonPopupCloseButton {
 div.timetablePreLoading {
     background: transparent url('static:images/load_big.gif') scroll no-repeat center center;
 }
+
 div.timetablePreLoading .text {
     color: #777;
     text-align: center;
@@ -635,7 +532,7 @@ ul.popupList li a {
     vertical-align: bottom;
     padding: 4px;
     display: block;
-    list-style-type:none;
+    list-style-type: none;
 }
 
 ul.popupList li a.selected {
@@ -650,7 +547,7 @@ ul.popupList li span {
 ul.popupList li a:hover {
     padding: 4px;
     display: block;
-    list-style-type:none;
+    list-style-type: none;
     color: white;
     background: #5FA5D4;
 }
@@ -690,7 +587,8 @@ ul.sectionPopupList li.section .line {
 
 ul.sectionPopupList li.section .name {
     position: absolute;
-    top: 0; right: 0;
+    top: 0;
+    right: 0;
     font-family: Verdana;
     font-size: 12px;
     color: #666;
@@ -738,55 +636,10 @@ div.cssPreview {
     float: right;
 }
 
-ul.nobulletsListInline
-{
-    margin:0px;
-    margin-top: 10px;
-    padding-left: 0px;
-}
-
-ul.nobulletsListInline li
-{
-    margin-left: 10px;
-    height: 25px;
-    overflow: visible;
-    list-style-type: none;
-    display: inline;
-}
-
-div.AspectsListDiv {
-    margin-bottom: 10px;
-    height: 100px;
-    width: 350px;
-    border: 1px solid #CCCCCC;
-    overflow: auto;
-}
-
-div.PeopleListDiv {
-    margin-bottom: 10px;
-    height: 100px;
-    width: 300px;
-    border: 1px solid #CCCCCC;
-    overflow: auto;
-}
-
-div.disabled {
-    background: #DDDDDD;
-}
-
-div.disabled input {
-    color: #AAAAAA;
-    background: #DDDDDD;
-}
-
-div.disabled input[disabled] {
-    background: #DDDDDD;
-}
-
 div.posterEntry {
     border: 1px solid #aaaaaa;
     -moz-border-radius: 3px;
-    -webkit-border-radius:3px;
+    -webkit-border-radius: 3px;
     padding: 5px;
     margin-bottom: 5px;
     overflow: auto;
@@ -795,30 +648,6 @@ div.posterEntry {
 
 div.posterEntry:hover {
     background-color: #ECECEC;
-}
-
-.startEndDate, .support {
-    margin-top: 5px;
-}
-
-.startEndDate td, .support td {
-    color: #000;
-}
-td.startEndDateEntry, td.supportEntry, span.innerWidgetLabel {
-    color: #666;
-    padding-right: 6px;
-}
-
-.support td input {
-    width: 300px;
-}
-
-tr.selectedItem td {
-    color: #000;
-}
-
-.filterTable {
-    border-collapse: collapse;
 }
 
 div.invalid {
@@ -856,72 +685,9 @@ body.cke_show_borders {
     height: auto;
 }
 
-.infoTD {
-    padding: 4px 4px 4px 10px;
-}
-
-.infoTR:hover {
-    background-color: #ECECEC;
-}
-
-.infoTable {
-    -moz-border-radius: 5px 5px 5px 5px;
-    border:1px solid #999999;
-}
-
-table.infoTable td.tableHeader {
-    font-size: 13px;
-    font-family: Verdana, Arial;
-    color: #523D04;
-    padding: 7px;
-    border-bottom: 1px groove #A4A4A4;
-    font-weight: bold;
-}
-
-table.infoTable td.content {
-    padding: 7px;
-}
-
 .link {
     cursor: pointer;
     color: #045FB4;
-}
-
-.abstract.selected, .participant.selected {
-    background: #CDEB8B;
-}
-
-.abstract:hover, .participant:hover {
-    background: #FFF6DF;
-}
-
-.abstract.selected:hover, .participant.selected:hover {
-    background: #CDEB8B;
-}
-
-.dragndrop-placeholder {
-    background: none repeat scroll 0 0 #FFCC66;
-    height: 1.5em;
-    margin-top: 3px;
-    margin-bottom: 3px;
-}
-
-.drop-target {
-    background: none repeat scroll 0 0 #FFF7CF;
-    border: 1px dashed #FFAA00 !important;
-    width: 85%;
-}
-
-.sortblock {
-    width:85%;
-}
-
-.sortblock ul {
-    margin-top: 2px;
-    margin-bottom: 10px;
-    padding: 4px;
-    list-style-type: none;
-    width: 100%;
 }
 
 .social_share_tooltip {
@@ -963,12 +729,12 @@ table.infoTable td.content {
     color: #999;
 }
 
-.social_share_tooltip.qtip-dark .qtip-content{
-    background: rgba(40,40,40,0.96);
+.social_share_tooltip.qtip-dark .qtip-content {
+    background: rgba(40, 40, 40, 0.96);
     border-color: #303030;
 }
 
-.social_share_tooltip.qtip-blue .qtip-content{
+.social_share_tooltip.qtip-blue .qtip-content {
     background: #E5F6FE;
     border-color: #ADD9ED;
     color: #5E99BD;
@@ -995,11 +761,11 @@ table.infoTable td.content {
 }
 
 .social_share_tooltip.qtip-dark .social_site {
-    background: rgba(0,0,0,0.15);
+    background: rgba(0, 0, 0, 0.15);
 }
 
 .social_share_tooltip.qtip-blue .social_site {
-    background: rgba(255,255,255,0.6);
+    background: rgba(255, 255, 255, 0.6);
 }
 
 .social_share_tooltip .social_site * {
@@ -1007,8 +773,8 @@ table.infoTable td.content {
 }
 
 .placesLeft {
-    color:green;
-    font-style:italic;
+    color: green;
+    font-style: italic;
     padding-left: 5px;
 }
 
@@ -1017,7 +783,7 @@ table.infoTable td.content {
 }
 
 .scrolling {
-    background-color:#FFFFFF;
+    background-color: #FFFFFF;
     box-shadow: 0 12px 6px -6px rgba(0, 0, 0, 0.2);
     position: fixed;
     top: 0;
@@ -1084,8 +850,8 @@ table.infoTable td.content {
 
 .ui-list-menu-level-0 > li {
     background: #ECECEC;
-    background: -webkit-gradient(linear,0% 40%,0% 70%,from(#F5F5F5),to(#F1F1F1));
-    background: -moz-linear-gradient(linear,0% 40%,0% 70%,from(#F5F5F5),to(#F1F1F1));
+    background: -webkit-gradient(linear, 0% 40%, 0% 70%, from(#F5F5F5), to(#F1F1F1));
+    background: -moz-linear-gradient(linear, 0% 40%, 0% 70%, from(#F5F5F5), to(#F1F1F1));
     border: solid 1px #dcdcdc;
     border-radius: 5px;
     -webkit-border-radius: 5px;
@@ -1124,7 +890,7 @@ table.infoTable td.content {
     border-width: 0 0 1px 0 !important;
 }
 
-.ui-list-menu-level-2{
+.ui-list-menu-level-2 {
     width: 100px;
 }
 
@@ -1177,7 +943,7 @@ table.infoTable td.content {
     font-size: 10px;
     padding: 4px;
     opacity: 0.7;
-    box-shadow: 0px 0px 4px rgba(0,0,0,0.3);
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
 }
 
 #dragTip .pointer {
@@ -1201,7 +967,7 @@ table.infoTable td.content {
 
 .icalExportPopup .exportIcalHeader {
     font-weight: bold;
-    font-size :12px;
+    font-size: 12px;
     margin-bottom: 5px;
 }
 
@@ -1233,7 +999,7 @@ table.infoTable td.content {
     margin-top: 5px;
     vertical-align: middle;
     text-align: justify;
-    background: rgba(0,0,0,0.15);
+    background: rgba(0, 0, 0, 0.15);
 
 }
 
@@ -1255,7 +1021,7 @@ table.infoTable td.content {
 
 .settingsWidget .settingsWidgetSection, .protectionWidget .protectionWidgetSection {
     padding: 10px 0px 0px;
-    text-align:justify;
+    text-align: justify;
 }
 
 .settingsWidget .settingsWidgetHeader {
@@ -1265,7 +1031,7 @@ table.infoTable td.content {
 
 .settingsWidget .settingsSeparator {
     border-bottom: 1px solid #DDDDDD;
-    margin-bottom:5px;
+    margin-bottom: 5px;
 }
 
 .protectionWidget {
@@ -1325,14 +1091,6 @@ ul.material_list ul li {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-
-.visibility_hidden {
-    visibility: hidden;
-    padding: 0;
-    height: 0;
-    margin: 0;
-    border: 0;
 }
 
 .user_list_icon_shield {

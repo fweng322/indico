@@ -8,12 +8,12 @@
 import _ from 'lodash';
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, List} from 'semantic-ui-react';
+import {Button, Dropdown, List} from 'semantic-ui-react';
 import {Translate} from 'indico/react/i18n';
-import {UserSearch, GroupSearch} from '../principals/Search';
-import {useFetchPrincipals, usePermissionInfo} from '../principals/hooks';
+import {DefaultUserSearch, GroupSearch} from '../principals/Search';
+import {useFetchPrincipals} from '../principals/hooks';
 import {PendingPrincipalListItem, PrincipalListItem} from '../principals/items';
-import {getPrincipalList} from '../principals/util';
+import {getPrincipalList, PrincipalType} from '../principals/util';
 
 import '../principals/PrincipalListField.module.scss';
 import PrincipalPermissions from './PrincipalPermissions';
@@ -27,11 +27,9 @@ function buildACL(aclMap) {
   ]);
 }
 
-const isGroup = identifier => identifier.startsWith('Group:');
-
 /**
  * The ACLField is a PrincipalField on steroids. In addition to the functionality
- * present in ACLField, it keeps track of user permissions.
+ * present in PrincipalField, it keeps track of user permissions.
  */
 const ACLField = props => {
   const {
@@ -42,16 +40,18 @@ const ACLField = props => {
     onFocus,
     onBlur,
     withGroups,
+    eventId,
+    eventRoles,
     favoriteUsersController,
     readAccessAllowed,
+    fullAccessAllowed,
+    permissionInfo,
+    permissionManager,
   } = props;
   const [favoriteUsers, [handleAddFavorite, handleDelFavorite]] = favoriteUsersController;
 
   const valueIds = value.map(([identifier]) => identifier);
-
-  // Permission info - description of permission hierarchy
-  const [permissionManager, permissionInfo] = usePermissionInfo();
-
+  const usedIdentifiers = new Set(valueIds);
   // keep track of permissions for each entry (ACL)
   const aclMap = Object.assign(
     {},
@@ -67,24 +67,28 @@ const ACLField = props => {
   };
 
   // fetch missing principals' information
-  const informationMap = useFetchPrincipals(valueIds);
+  const informationMap = useFetchPrincipals(valueIds, eventId);
 
   const handleDelete = identifier => {
     setValue(prev => _.omit(prev, identifier));
   };
   const handleAddItems = data => {
-    const newACLs = data.map(({identifier}) => ({[identifier]: ['prebook']}));
+    const {
+      permissionInfo: {default: defaultPermission},
+    } = props;
+    const newACLs = data.map(({identifier}) => ({[identifier]: [defaultPermission]}));
     setValue(prev => ({...prev, ...Object.assign({}, ...newACLs)}));
   };
 
   // Handling of list of principals (shared with PrincipalListField)
-  const [entries, pendingEntries] = getPrincipalList(
-    valueIds,
-    informationMap,
-    id => ({identifier: id, group: isGroup(id)}),
-    entry => `${entry.group ? 0 : 1}-${entry.name.toLowerCase()}`,
-    entry => `${entry.group ? 0 : 1}-${entry.identifier.toLowerCase()}`
-  );
+  const [entries, pendingEntries] = getPrincipalList(valueIds, informationMap);
+
+  const roleOptions = eventRoles
+    .filter(r => !usedIdentifiers.has(r.identifier))
+    .map(r => ({
+      value: r.identifier,
+      text: r.name,
+    }));
 
   return (
     <>
@@ -106,6 +110,7 @@ const ACLField = props => {
                 );
               }}
               readAccessAllowed={readAccessAllowed}
+              fullAccessAllowed={fullAccessAllowed}
               readOnly={readOnly}
             />
           );
@@ -114,9 +119,10 @@ const ACLField = props => {
               key={data.identifier}
               name={data.name}
               detail={data.detail}
-              isGroup={data.group}
+              meta={data.meta}
+              type={data.type}
               invalid={data.invalid}
-              favorite={!data.group && data.userId in favoriteUsers}
+              favorite={data.type === PrincipalType.user && data.userId in favoriteUsers}
               onDelete={() => !disabled && handleDelete(data.identifier)}
               onAddFavorite={() => !disabled && handleAddFavorite(data.userId)}
               onDelFavorite={() => !disabled && handleDelFavorite(data.userId)}
@@ -127,7 +133,7 @@ const ACLField = props => {
           );
         })}
         {pendingEntries.map(data => (
-          <PendingPrincipalListItem key={data.identifier} isGroup={data.group} />
+          <PendingPrincipalListItem key={data.identifier} type={data.type} />
         ))}
         {!value.length && (
           <List.Item styleName="empty">
@@ -138,7 +144,7 @@ const ACLField = props => {
       {!readOnly && (
         <Button.Group>
           <Button icon="add" as="div" disabled />
-          <UserSearch
+          <DefaultUserSearch
             existing={valueIds}
             onAddItems={handleAddItems}
             favorites={favoriteUsers}
@@ -146,6 +152,21 @@ const ACLField = props => {
           />
           {withGroups && (
             <GroupSearch existing={valueIds} onAddItems={handleAddItems} disabled={disabled} />
+          )}
+          {eventRoles.length !== 0 && (
+            <Dropdown
+              text={Translate.string('Role')}
+              button
+              upward
+              floating
+              disabled={roleOptions.length === 0}
+              options={roleOptions}
+              value={null}
+              openOnFocus={false}
+              selectOnBlur={false}
+              selectOnNavigation={false}
+              onChange={(e, data) => handleAddItems([{identifier: data.value}])}
+            />
           )}
         </Button.Group>
       )}
@@ -172,12 +193,30 @@ ACLField.propTypes = {
   withGroups: PropTypes.bool,
   /** Whether the 'read_access' permission is used/allowed */
   readAccessAllowed: PropTypes.bool,
+  /** Whether the 'full_access' permission is used/allowed */
+  fullAccessAllowed: PropTypes.bool,
+  /** The ID of the event used in case of event-scoped principals */
+  eventId: PropTypes.number,
+  /** The event roles that are available for the specified eventId */
+  eventRoles: PropTypes.array,
+  /** Object containing metadata about available permissions */
+  permissionInfo: PropTypes.shape({
+    permissions: PropTypes.object,
+    tree: PropTypes.object,
+    default: PropTypes.string,
+  }).isRequired,
+  permissionManager: PropTypes.shape({
+    setPermissionForId: PropTypes.func.isRequired,
+  }).isRequired,
 };
 
 ACLField.defaultProps = {
   withGroups: false,
   readOnly: false,
   readAccessAllowed: true,
+  fullAccessAllowed: true,
+  eventId: null,
+  eventRoles: [],
 };
 
 export default React.memo(ACLField);

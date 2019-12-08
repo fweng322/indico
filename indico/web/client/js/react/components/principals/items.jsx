@@ -9,19 +9,18 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, List, Loader, Popup} from 'semantic-ui-react';
 import {Translate} from 'indico/react/i18n';
+import {PrincipalType} from './util';
 
 import './items.module.scss';
 
-export const PendingPrincipalListItem = ({isGroup}) => (
+export const PendingPrincipalListItem = ({type}) => (
   <List.Item>
     <div styleName="item">
       <div styleName="icon">
-        <Icon name={isGroup ? 'users' : 'user'} size="large" />
+        <Icon name={PrincipalType.getIcon(type)} size="large" />
       </div>
       <div styleName="content">
-        <List.Content>
-          {isGroup ? <Translate>Unknown group</Translate> : <Translate>Unknown user</Translate>}
-        </List.Content>
+        <List.Content>{PrincipalType.getPendingText(type)}</List.Content>
       </div>
       <div styleName="loader">
         <Loader active inline size="small" />
@@ -31,19 +30,20 @@ export const PendingPrincipalListItem = ({isGroup}) => (
 );
 
 PendingPrincipalListItem.propTypes = {
-  isGroup: PropTypes.bool,
+  type: PrincipalType.propType,
 };
 
 PendingPrincipalListItem.defaultProps = {
-  isGroup: false,
+  type: PrincipalType.user,
 };
 
 export const PrincipalListItem = ({
   isPendingUser,
-  isGroup,
+  type,
   invalid,
   name,
   detail,
+  meta,
   canDelete,
   onDelete,
   onAddFavorite,
@@ -56,28 +56,28 @@ export const PrincipalListItem = ({
 }) => (
   <List.Item>
     <div styleName="item">
-      <div styleName="icon">
-        {invalid ? (
-          <Popup
-            trigger={
-              <Icon.Group size="large">
-                <Icon name={isGroup ? 'users' : 'user'} />
-                <Icon name="exclamation triangle" color="orange" corner />
-              </Icon.Group>
-            }
-          >
-            {isGroup ? (
-              <Translate>
-                This group does not exist anymore. Please choose a different one.
-              </Translate>
-            ) : (
-              <Translate>This user does not exist anymore. Please choose someone else.</Translate>
-            )}
-          </Popup>
-        ) : (
-          <Icon name={isGroup ? 'users' : 'user'} size="large" />
-        )}
-      </div>
+      {type === PrincipalType.eventRole ? (
+        <div styleName="event-role">
+          <span style={meta.style}>{meta.code}</span>
+        </div>
+      ) : (
+        <div styleName="icon">
+          {invalid ? (
+            <Popup
+              trigger={
+                <Icon.Group size="large">
+                  <Icon name={PrincipalType.getIcon(type)} />
+                  <Icon name="exclamation triangle" color="orange" corner />
+                </Icon.Group>
+              }
+            >
+              {PrincipalType.getDeletedText(type)}
+            </Popup>
+          ) : (
+            <Icon name={PrincipalType.getIcon(type)} size="large" />
+          )}
+        </div>
+      )}
       <div styleName="content">
         <List.Content>{name}</List.Content>
         {detail && (
@@ -89,7 +89,7 @@ export const PrincipalListItem = ({
       </div>
       {!readOnly && (
         <div styleName="actions">
-          {!isGroup &&
+          {type === PrincipalType.user &&
             !isPendingUser &&
             (favorite ? (
               <Icon
@@ -125,11 +125,12 @@ export const PrincipalListItem = ({
 );
 
 PrincipalListItem.propTypes = {
-  isGroup: PropTypes.bool,
+  type: PrincipalType.propType,
   isPendingUser: PropTypes.bool,
   invalid: PropTypes.bool,
   name: PropTypes.string.isRequired,
   detail: PropTypes.string,
+  meta: PropTypes.object,
   actions: PropTypes.node,
   onDelete: PropTypes.func.isRequired,
   onAddFavorite: PropTypes.func.isRequired,
@@ -142,14 +143,15 @@ PrincipalListItem.propTypes = {
 };
 
 PrincipalListItem.defaultProps = {
+  type: PrincipalType.user,
   canDelete: true,
   actions: null,
   disabled: false,
   readOnly: false,
-  isGroup: false,
   isPendingUser: false,
   invalid: false,
   detail: null,
+  meta: {},
   search: null,
 };
 

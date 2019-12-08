@@ -11,7 +11,6 @@ import re
 
 import requests
 from flask import flash, jsonify, redirect, request, session
-from marshmallow import ValidationError
 from packaging.version import Version
 from pkg_resources import DistributionNotFound, get_distribution
 from pytz import common_timezones_set
@@ -28,20 +27,19 @@ from indico.core.notifications import make_email, send_email
 from indico.core.settings import PrefixSettingsProxy
 from indico.modules.admin import RHAdminBase
 from indico.modules.cephalopod import cephalopod_settings
-from indico.modules.core.forms import ReportErrorForm, SettingsForm
+from indico.modules.core.forms import SettingsForm
 from indico.modules.core.settings import core_settings, social_settings
 from indico.modules.core.views import WPContact, WPSettings
 from indico.modules.users.controllers import RHUserBase
 from indico.util.i18n import _, get_all_locales
-from indico.util.marshmallow import PrincipalList
-from indico.util.user import principal_from_identifier
+from indico.util.marshmallow import PrincipalDict
 from indico.web.args import use_kwargs
 from indico.web.errors import load_error_data
 from indico.web.flask.templating import get_template_module
 from indico.web.flask.util import url_for
 from indico.web.forms.base import FormDefaults
 from indico.web.rh import RH, RHProtected
-from indico.web.util import jsonify_data, jsonify_form, signed_url_for
+from indico.web.util import signed_url_for
 
 
 class RHContact(RH):
@@ -51,7 +49,7 @@ class RHContact(RH):
         return WPContact.render_template('contact.html')
 
 
-class RHReportErrorBase(RH):
+class RHReportErrorAPI(RH):
     def _process_args(self):
         self.error_data = load_error_data(request.view_args['error_id'])
         if self.error_data is None:
@@ -95,17 +93,6 @@ class RHReportErrorBase(RH):
             # don't bother users if this fails!
             Logger.get('sentry').exception('Could not submit user feedback')
 
-
-class RHReportError(RHReportErrorBase):
-    def _process(self):
-        form = ReportErrorForm(email=(session.user.email if session.user else ''))
-        if form.validate_on_submit():
-            self._save_report(form.email.data, form.comment.data)
-            return jsonify_data(flash=False)
-        return jsonify_form(form)
-
-
-class RHReportErrorAPI(RHReportErrorBase):
     @use_kwargs({
         'email': fields.Email(missing=None),
         'comment': fields.String(required=True),
@@ -221,21 +208,40 @@ class RHVersionCheck(RHAdminBase):
                        plugins=self._check_version('indico-plugins'))
 
 
-class _PrincipalDict(PrincipalList):
-    # We need to keep identifiers separately since for pending users we
-    # can't get the correct one back from the user
-    def _deserialize(self, value, attr, data):
-        try:
-            return {identifier: principal_from_identifier(identifier,
-                                                          allow_groups=self.allow_groups,
-                                                          allow_external_users=self.allow_external_users,
-                                                          soft_fail=True)
-                    for identifier in value}
-        except ValueError as exc:
-            raise ValidationError(unicode(exc))
+class PrincipalsMixin(object):
+    def _serialize_principal(self, identifier, principal):
+        if principal.principal_type == PrincipalType.user:
+            return {'identifier': identifier,
+                    'type': 'user',
+                    'user_id': principal.id,
+                    'invalid': principal.is_deleted,
+                    'name': principal.display_full_name,
+                    'detail': ('{} ({})'.format(principal.email, principal.affiliation)
+                               if principal.affiliation else principal.email)}
+        elif principal.principal_type == PrincipalType.local_group:
+            return {'identifier': identifier,
+                    'type': 'local_group',
+                    'invalid': principal.group is None,
+                    'name': principal.name}
+        elif principal.principal_type == PrincipalType.multipass_group:
+            return {'identifier': identifier,
+                    'type': 'multipass_group',
+                    'invalid': principal.group is None,
+                    'name': principal.name,
+                    'detail': principal.provider_title}
+        elif principal.principal_type == PrincipalType.event_role:
+            return {'identifier': identifier,
+                    'type': 'event_role',
+                    'invalid': False,
+                    'name': principal.name,
+                    'meta': {'style': principal.style, 'code': principal.code}}
+
+    def _process(self):
+        return jsonify({identifier: self._serialize_principal(identifier, principal)
+                        for identifier, principal in self.values.viewitems()})
 
 
-class RHPrincipals(RHProtected):
+class RHPrincipals(PrincipalsMixin, RHProtected):
     """Resolve principal identifiers to their actual objects.
 
     This is intended for PrincipalListField which needs to be able
@@ -243,33 +249,11 @@ class RHPrincipals(RHProtected):
     human-friendly.
     """
 
-    def _serialize_principal(self, identifier, principal):
-        if principal.principal_type == PrincipalType.user:
-            return {'identifier': identifier,
-                    'user_id': principal.id,
-                    'group': False,
-                    'invalid': principal.is_deleted,
-                    'name': principal.display_full_name,
-                    'detail': ('{} ({})'.format(principal.email, principal.affiliation)
-                               if principal.affiliation else principal.email)}
-        elif principal.principal_type == PrincipalType.local_group:
-            return {'identifier': identifier,
-                    'group': True,
-                    'invalid': principal.group is None,
-                    'name': principal.name}
-        elif principal.principal_type == PrincipalType.multipass_group:
-            return {'identifier': identifier,
-                    'group': True,
-                    'invalid': principal.group is None,
-                    'name': principal.name,
-                    'detail': principal.provider_title}
-
     @use_kwargs({
-        'values': _PrincipalDict(allow_groups=True, allow_external_users=True, missing={})
+        'values': PrincipalDict(allow_groups=True, allow_external_users=True, missing={})
     })
-    def _process(self, values):
-        return jsonify({identifier: self._serialize_principal(identifier, principal)
-                        for identifier, principal in values.viewitems()})
+    def _process_args(self, values):
+        self.values = values
 
 
 class RHSignURL(RHProtected):

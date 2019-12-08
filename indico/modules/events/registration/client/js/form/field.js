@@ -201,7 +201,11 @@ ndRegForm.controller('FieldCtrl', function($scope, regFormFactory) {
             )
             .format(name);
         } else if (data.conflict === 'email-invalid') {
-          msg = $T.gettext('This email address is invalid.').format(name);
+          if (data.email_error === 'undeliverable') {
+            msg = $T.gettext('The domain used in the email address does not exist.');
+          } else {
+            msg = $T.gettext('This email address is invalid.');
+          }
         } else if (!data.user) {
           msg = $T.gettext('The registration will not be associated with any Indico account.');
         } else if (data.self) {
@@ -873,13 +877,13 @@ ndRegForm.directive('ndAccommodationField', function(url) {
     controller: function($scope) {
       $scope.tplInput = url.tpl('fields/accommodation.tpl.html');
       $scope.areArrivalDatesValid = function(data) {
-        return moment(data['arrivalDateTo'], 'DD/MM/YYYY').isAfter(
+        return moment(data['arrivalDateTo'], 'DD/MM/YYYY').isSameOrAfter(
           moment(data['arrivalDateFrom'], 'DD/MM/YYYY')
         );
       };
 
       $scope.areDepartureDatesValid = function(data) {
-        return moment(data['departureDateTo'], 'DD/MM/YYYY').isAfter(
+        return moment(data['departureDateTo'], 'DD/MM/YYYY').isSameOrAfter(
           moment(data['departureDateFrom'], 'DD/MM/YYYY')
         );
       };

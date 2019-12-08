@@ -32,6 +32,7 @@ import {useIndicoAxios} from 'indico/react/hooks';
 import {Overridable} from 'indico/react/util';
 import {indicoAxios} from 'indico/utils/axios';
 import {camelizeKeys} from 'indico/utils/case';
+import {PrincipalType} from './util';
 
 import './items.module.scss';
 import './Search.module.scss';
@@ -268,7 +269,13 @@ const searchFactory = config => {
     const trigger = triggerFactory ? (
       triggerFactory({disabled, onClick: handleOpenClick})
     ) : (
-      <Button type="button" content={buttonTitle} disabled={disabled} onClick={handleOpenClick} />
+      <Button
+        as="div"
+        type="button"
+        content={buttonTitle}
+        disabled={disabled}
+        onClick={handleOpenClick}
+      />
     );
 
     const stopPropagation = evt => {
@@ -424,10 +431,10 @@ const InnerUserSearch = searchFactory({
     const resultData = camelizeKeys(response.data);
     resultData.results = resultData.users.map(({identifier, id, fullName, email, affiliation}) => ({
       identifier,
+      type: PrincipalType.user,
       userId: id,
       name: fullName,
       detail: affiliation ? `${email} (${affiliation})` : email,
-      group: false,
     }));
     delete resultData.users;
     setResult(resultData);
@@ -447,7 +454,7 @@ const InnerUserSearch = searchFactory({
   ),
 });
 
-const _UserSearch = ({withExternalUsers, initialFormValues, ...props}) => {
+export const DefaultUserSearch = ({withExternalUsers, initialFormValues, ...props}) => {
   if (!withExternalUsers) {
     // ignore form defaults for a field that's hidden
     delete initialFormValues.external;
@@ -461,19 +468,19 @@ const _UserSearch = ({withExternalUsers, initialFormValues, ...props}) => {
   );
 };
 
-_UserSearch.propTypes = {
+DefaultUserSearch.propTypes = {
   ...InnerUserSearch.propTypes,
   withExternalUsers: PropTypes.bool,
   initialFormValues: PropTypes.object,
 };
 
-_UserSearch.defaultProps = {
+DefaultUserSearch.defaultProps = {
   ...InnerUserSearch.defaultProps,
   withExternalUsers: false,
   initialFormValues: {},
 };
 
-export const UserSearch = Overridable.component('UserSearch', _UserSearch);
+export const UserSearch = Overridable.component('UserSearch', DefaultUserSearch);
 
 export const GroupSearch = searchFactory({
   componentName: 'GroupSearch',
@@ -504,11 +511,11 @@ export const GroupSearch = searchFactory({
       return handleSubmitError(error);
     }
     const resultData = camelizeKeys(response.data);
-    resultData.results = resultData.groups.map(({identifier, name, providerTitle}) => ({
+    resultData.results = resultData.groups.map(({identifier, name, provider, providerTitle}) => ({
       identifier,
       name,
+      type: provider ? PrincipalType.multipassGroup : PrincipalType.localGroup,
       detail: providerTitle || null,
-      group: true,
     }));
     delete resultData.groups;
     setResult(resultData);

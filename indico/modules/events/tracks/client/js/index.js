@@ -5,11 +5,39 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
+/* eslint-disable import/unambiguous */
+/* global handleAjaxError:false */
 (function(global) {
-  'use strict';
+  function updateSorting() {
+    const container = $('#track-list-container');
+    const sortedList = container
+      .find('li.track-row')
+      .map(function() {
+        const $this = $(this);
+        if ($this.hasClass('track-group-box')) {
+          return {id: $this.data('id'), type: 'group'};
+        } else {
+          let parent = null;
+          const parentDiv = $this.closest('.track-group-box');
+          if (parentDiv.length) {
+            parent = parentDiv.data('id');
+          }
+          return {id: $this.data('id'), type: 'track', parent};
+        }
+      })
+      .get();
+    $.ajax({
+      url: container.data('url'),
+      method: 'POST',
+      contentType: 'application/json',
+      data: JSON.stringify({sort_order: sortedList}),
+      complete: IndicoUI.Dialogs.Util.progress(),
+      error: handleAjaxError,
+    });
+  }
 
   global.setupTrackManagement = function setupTrackManagement() {
-    var heightLimit = 50;
+    const heightLimit = 50;
     $('#track-list-container')
       .on('indico:htmlUpdated', function() {
         const $this = $(this);
@@ -28,44 +56,23 @@
           axis: 'y',
           cursor: 'move',
           distance: 2,
-          tolerance: 'pointer',
           forcePlaceholderSize: true,
           placeholder: 'track-placeholder',
           connectWith: '.track-list',
-          update: function() {
-            const $this = $(this);
-            const sortedList = $this.find('li.track-row')
-              .map(function() {
-                const $this = $(this);
-                if ($this.hasClass('track-group-box')) {
-                  return {id: $this.data('id'), type: 'group'};
-                } else {
-                  let parent = null;
-                  const parentDiv = $this.closest('.track-group-box');
-                  if (parentDiv.length) {
-                    parent = parentDiv.data('id');
-                  }
-                  return {id: $this.data('id'), type: 'track', parent};
-                }
-              })
-              .get();
-            $.ajax({
-              url: $this.data('url'),
-              method: 'POST',
-              contentType: 'application/json',
-              data: JSON.stringify({sort_order: sortedList}),
-              complete: IndicoUI.Dialogs.Util.progress(),
-              error: handleAjaxError,
-            });
+          update(_, ui) {
+            // call update only once and only for the receiver
+            if (this === ui.item.parent()[0]) {
+              updateSorting();
+            }
           },
-          receive: function(event, ui) {
-            const parentDiv = $this.closest('.track-group-box');
+          receive(_, ui) {
+            const parentDiv = $(this).closest('.track-group-box');
             if (parentDiv.length && ui.item.hasClass('track-group-box')) {
               $(ui.sender).sortable('cancel');
             }
-          }
-      });
-    })
-    .trigger('indico:htmlUpdated');
-  }
+          },
+        });
+      })
+      .trigger('indico:htmlUpdated');
+  };
 })(window);

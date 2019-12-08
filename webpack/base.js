@@ -217,26 +217,17 @@ export function webpackDefaults(env, config, bundles) {
         loader: 'sass-loader',
         options: {
           sourceMap: true,
-          includePaths: [scssIncludePath],
-          outputStyle: 'compact',
-          importer: [sassResolver, importOnce],
+          sassOptions: {
+            includePaths: [scssIncludePath],
+            outputStyle: 'compact',
+            importer: [sassResolver, importOnce],
+          },
         },
       },
     ];
   }
 
   const indicoClientPath = globalBuildConfig.clientPath;
-  const babelPlugins = [
-    [
-      'flask-urls',
-      {
-        importPrefix: 'indico-url',
-        urlMap: require(config.build.urlMapPath).rules,
-        basePath: globalBuildConfig.baseURLPath,
-      },
-    ],
-    'macros',
-  ];
 
   return {
     devtool: 'source-map',
@@ -263,20 +254,11 @@ export function webpackDefaults(env, config, bundles) {
           test: /\.js$/,
           loader: 'babel-loader',
           exclude: /node_modules/,
-          options: {
-            extends: path.resolve(globalBuildConfig.rootPath, '..', '.babelrc'),
-            plugins: babelPlugins,
-          },
         },
         {
           test: /\.jsx$/,
           loader: 'babel-loader',
           exclude: /node_modules/,
-          options: {
-            extends: path.resolve(globalBuildConfig.rootPath, '..', '.babelrc'),
-            presets: ['@babel/react'],
-            plugins: babelPlugins,
-          },
         },
         {
           oneOf: [
@@ -388,6 +370,7 @@ export function webpackDefaults(env, config, bundles) {
         new TerserPlugin({
           // XXX: minification breaks angularjs :(
           exclude: /js\/module_events\.registration\.[^.]+\.bundle\.js$/,
+          extractComments: false,
           // default options from webpack
           cache: true,
           parallel: true,

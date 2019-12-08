@@ -28,6 +28,8 @@ Improvements
 - Add ICS export for information in the user dashboard (:issue:`4057`)
 - Allow data syncing with multipass providers which do not support
   refreshing identity information
+- Show more verbose error when email validation fails during event
+  registration (:issue:`4177`)
 
 Internal Changes
 ^^^^^^^^^^^^^^^^
@@ -42,10 +44,31 @@ Bugfixes
 
 ----
 
-Version 2.2.5
+Version 2.2.6
 -------------
 
 *Unreleased*
+
+Bugfixes
+^^^^^^^^
+
+- Fix some email fields (error report contact, agreement cc address) being
+  required even though they should be optional
+
+Version 2.2.5
+-------------
+
+*Released on December 06, 2019*
+
+Improvements
+^^^^^^^^^^^^
+
+- Sort posters in timetable PDF export by board number (:issue:`4147`, thanks
+  :user:`bpedersen2`)
+- Use lat/lng field order instead of lng/lat when editing rooms (:issue:`4150`,
+  thanks :user:`bpedersen2`)
+- Add additional fields to the contribution csv/xlsx export (authors and board
+  number) (:issue:`4148`, thanks :user:`bpedersen2`)
 
 Bugfixes
 ^^^^^^^^
@@ -58,6 +81,15 @@ Bugfixes
 - Fix creating rooms without touching the longitude/latitude fields (:issue:`4115`)
 - Fix error in HTTP API when Basic auth headers are present (:issue:`4123`,
   thanks :user:`uxmaster`)
+- Fix incorrect font size in some room booking dropdowns (:issue:`4156`)
+- Add missing email validation in some places (:issue:`4158`)
+- Reject requests containing NUL bytes in the POST data (:issue:`4159`)
+- Fix truncated timetable PDF when using "Print each session on a separate page" in
+  an event where the last timetable entry of the day is a top-level contribution
+  or break (:issue:`4134`, thanks :user:`bpedersen2`)
+- Only show public contribution fields in PDF exports (:issue:`4165`)
+- Allow single arrival/departure date in accommodation field (:issue:`4164`,
+  thanks :user:`bpedersen2`)
 
 Version 2.2.4
 -------------

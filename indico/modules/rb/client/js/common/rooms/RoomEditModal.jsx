@@ -51,6 +51,7 @@ import {
 import {FavoritesProvider} from 'indico/react/hooks';
 import {Translate} from 'indico/react/i18n';
 import {FinalEmailList, FinalPrincipal, ACLField} from 'indico/react/components';
+import {usePermissionInfo} from 'indico/react/components/principals/hooks';
 import EquipmentList from './EquipmentList';
 import DailyAvailability from './DailyAvailability';
 import NonBookablePeriods from './NonBookablePeriods';
@@ -284,8 +285,8 @@ const columns = [
       content: [
         {
           type: 'input',
-          name: 'longitude',
-          label: Translate.string('Longitude'),
+          name: 'latitude',
+          label: Translate.string('Latitude'),
           inputArgs: {
             type: 'text',
             fluid: true,
@@ -295,8 +296,8 @@ const columns = [
         },
         {
           type: 'input',
-          name: 'latitude',
-          label: Translate.string('Latitude'),
+          name: 'longitude',
+          label: Translate.string('Longitude'),
           inputArgs: {
             type: 'text',
             fluid: true,
@@ -898,22 +899,30 @@ class RoomEditModal extends React.Component {
             </Form.Group>
           </React.Fragment>
         );
-      case 'permissions':
+      case 'permissions': {
+        const [permissionManager, permissionInfo] = usePermissionInfo();
         return (
-          <FavoritesProvider key={key}>
-            {favoriteUsersController => (
-              <FinalField
-                name="aclEntries"
-                component={ACLField}
-                favoriteUsersController={favoriteUsersController}
-                label={content.label}
-                readAccessAllowed={false}
-                isEqual={_.isEqual}
-                withGroups
-              />
-            )}
-          </FavoritesProvider>
+          permissionManager &&
+          permissionInfo && (
+            <FavoritesProvider key={key}>
+              {favoriteUsersController => (
+                <FinalField
+                  name="aclEntries"
+                  component={ACLField}
+                  favoriteUsersController={favoriteUsersController}
+                  label={content.label}
+                  permissions={false}
+                  readAccessAllowed={false}
+                  isEqual={_.isEqual}
+                  withGroups
+                  permissionInfo={permissionInfo}
+                  permissionManager={permissionManager}
+                />
+              )}
+            </FavoritesProvider>
+          )
         );
+      }
     }
   };
 
@@ -1040,19 +1049,17 @@ class RoomEditModal extends React.Component {
         };
 
     return (
-      <>
-        <Modal open onClose={this.handleCloseModal} size="large" closeIcon>
-          <FinalForm
-            validate={validate}
-            onSubmit={this.handleSubmit}
-            render={this.renderModalContent}
-            initialValues={initialValues}
-            initialValuesEqual={_.isEqual}
-            subscription={{submitting: true, hasValidationErrors: true, pristine: true}}
-            mutators={{...arrayMutators}}
-          />
-        </Modal>
-      </>
+      <Modal open onClose={this.handleCloseModal} size="large" closeIcon>
+        <FinalForm
+          validate={validate}
+          onSubmit={this.handleSubmit}
+          render={this.renderModalContent}
+          initialValues={initialValues}
+          initialValuesEqual={_.isEqual}
+          subscription={{submitting: true, hasValidationErrors: true, pristine: true}}
+          mutators={{...arrayMutators}}
+        />
+      </Modal>
     );
   }
 }

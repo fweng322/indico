@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 
 from indico.core.db.sqlalchemy import db
 from indico.core.db.sqlalchemy.descriptions import DescriptionMixin, RenderMode
+from indico.core.db.sqlalchemy.protection import ProtectionManagersMixin
 from indico.util.locators import locator_property
 from indico.util.string import format_repr, return_ascii, text_to_repr
 
@@ -23,10 +24,11 @@ def get_next_position(context):
     return (pos or 0) + 1
 
 
-class Track(DescriptionMixin, db.Model):
+class Track(DescriptionMixin, ProtectionManagersMixin, db.Model):
     __tablename__ = 'tracks'
     __table_args__ = {'schema': 'events'}
 
+    disable_protection_mode = True
     is_track_group = False
 
     possible_render_modes = {RenderMode.markdown}
@@ -68,7 +70,6 @@ class Track(DescriptionMixin, db.Model):
         index=True,
         nullable=True
     )
-
     event = db.relationship(
         'Event',
         lazy=True,
@@ -79,27 +80,12 @@ class Track(DescriptionMixin, db.Model):
             order_by=position
         )
     )
-    abstract_reviewers = db.relationship(
-        'User',
-        secondary='events.track_abstract_reviewers',
-        collection_class=set,
+    acl_entries = db.relationship(
+        'TrackPrincipal',
         lazy=True,
-        backref=db.backref(
-            'abstract_reviewer_for_tracks',
-            collection_class=set,
-            lazy=True
-        )
-    )
-    conveners = db.relationship(
-        'User',
-        secondary='events.track_conveners',
+        cascade='all, delete-orphan',
         collection_class=set,
-        lazy=True,
-        backref=db.backref(
-            'convener_for_tracks',
-            collection_class=set,
-            lazy=True
-        )
+        backref='track'
     )
     default_session = db.relationship(
         'Session',
@@ -111,6 +97,7 @@ class Track(DescriptionMixin, db.Model):
         lazy=True,
         backref=db.backref(
             'tracks',
+            order_by=position,
             lazy=True,
             passive_deletes=True
         )
@@ -132,6 +119,18 @@ class Track(DescriptionMixin, db.Model):
     def full_title(self):
         return '{} - {}'.format(self.code, self.title) if self.code else self.title
 
+    @property
+    def title_with_group(self):
+        return '{}: {}'.format(self.track_group.title, self.title) if self.track_group else self.title
+
+    @property
+    def short_title_with_group(self):
+        return '{}: {}'.format(self.track_group.title, self.short_title) if self.track_group else self.short_title
+
+    @property
+    def full_title_with_group(self):
+        return '{}: {}'.format(self.track_group.title, self.full_title) if self.track_group else self.full_title
+
     @locator_property
     def locator(self):
         return dict(self.event.locator, track_id=self.id)
@@ -148,21 +147,15 @@ class Track(DescriptionMixin, db.Model):
             return False
         elif not self.event.can_manage(user, permission='abstract_reviewer', explicit_permission=True):
             return False
-        elif user in self.event.global_abstract_reviewers:
+        elif self.event.can_manage(user, permission='review_all_abstracts', explicit_permission=True):
             return True
-        elif user in self.abstract_reviewers:
-            return True
-        else:
-            return False
+        return self.can_manage(user, permission='review', explicit_permission=True)
 
     def can_convene(self, user):
         if not user:
             return False
         elif not self.event.can_manage(user, permission='track_convener', explicit_permission=True):
             return False
-        elif user in self.event.global_conveners:
+        elif self.event.can_manage(user, permission='convene_all_abstracts', explicit_permission=True):
             return True
-        elif user in self.conveners:
-            return True
-        else:
-            return False
+        return self.can_manage(user, permission='convene', explicit_permission=True)

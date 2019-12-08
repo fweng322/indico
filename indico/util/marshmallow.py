@@ -8,6 +8,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import re
+from uuid import UUID
 
 from dateutil import parser, relativedelta
 from marshmallow import ValidationError
@@ -17,6 +18,7 @@ from sqlalchemy import inspect
 
 from indico.core.permissions import get_unified_permissions
 from indico.util.date_time import now_utc
+from indico.util.i18n import _
 from indico.util.user import principal_from_identifier
 
 
@@ -36,6 +38,16 @@ def validate_with_message(fn, reason):
             raise ValidationError(reason)
 
     return validate
+
+
+def not_empty(value):
+    """Validator which ensures the value is not empty.
+
+    Any falsy value is considered empty.
+    """
+
+    if not value:
+        raise ValidationError(_('This field cannot be empty.'))
 
 
 def _naive_isoformat(dt, **unused):
@@ -67,6 +79,49 @@ class NaiveDateTime(UnicodeDateTime):
     }
 
 
+class ModelField(Field):
+    """Marshmallow field for a single database object.
+
+    This serializes an SQLAlchemy object to its identifier (usually the PK),
+    and deserializes from the same kind of identifier back to an SQLAlchemy object.
+    """
+
+    default_error_messages = {
+        'not_found': '"{value}" does not exist',
+        'type': 'Invalid input type.'
+    }
+
+    def __init__(self, model, column=None, column_type=None, get_query=lambda m: m.query, **kwargs):
+        self.model = model
+        self.get_query = get_query
+        if column:
+            self.column = getattr(model, column)
+            # Custom column -> most likely a string value
+            self.column_type = column_type or unicode
+        else:
+            pks = inspect(model).primary_key
+            assert len(pks) == 1
+            self.column = pks[0]
+            # Default PK -> most likely an ID
+            self.column_type = column_type or int
+        super(ModelField, self).__init__(**kwargs)
+
+    def _serialize(self, value, attr, obj):
+        return getattr(value, self.column.key) if value is not None else None
+
+    def _deserialize(self, value, attr, data):
+        if value is None:
+            return None
+        try:
+            value = self.column_type(value)
+        except (TypeError, ValueError):
+            self.fail('type')
+        obj = self.get_query(self.model).filter(self.column == value).one_or_none()
+        if obj is None:
+            self.fail('not_found', value=value)
+        return obj
+
+
 class ModelList(Field):
     """Marshmallow field for a list of database objects.
 
@@ -80,8 +135,11 @@ class ModelList(Field):
         'type': 'Invalid input type.'
     }
 
-    def __init__(self, model, column=None, column_type=None, **kwargs):
+    def __init__(self, model, column=None, column_type=None, get_query=lambda m: m.query, collection_class=list,
+                 **kwargs):
         self.model = model
+        self.get_query = get_query
+        self.collection_class = collection_class
         if column:
             self.column = getattr(model, column)
             # Custom column -> most likely a string value
@@ -105,13 +163,13 @@ class ModelList(Field):
         except (TypeError, ValueError):
             self.fail('type')
         requested = set(value)
-        objs = self.model.query.filter(self.column.in_(value)).all()
+        objs = self.get_query(self.model).filter(self.column.in_(value)).all()
         found = {getattr(x, self.column.key) for x in objs}
         invalid = requested - found
         if invalid:
             self.fail('not_found', value=next(iter(invalid)))
         assert found == requested, 'Unexpected objects found'
-        return objs
+        return self.collection_class(objs)
 
 
 class Principal(Field):
@@ -139,9 +197,14 @@ class Principal(Field):
 class PrincipalList(Field):
     """Marshmallow field for a list of principals."""
 
-    def __init__(self, allow_groups=False, allow_external_users=False, **kwargs):
+    def __init__(self, allow_groups=False, allow_external_users=False, allow_event_roles=False, event_id=None,
+                 **kwargs):
         self.allow_groups = allow_groups
         self.allow_external_users = allow_external_users
+        self.allow_event_roles = allow_event_roles
+        self.event_id = event_id
+        if allow_event_roles and event_id is None:
+            raise ValueError('event_id is required to use event roles')
         super(PrincipalList, self).__init__(**kwargs)
 
     def _serialize(self, value, attr, obj):
@@ -151,21 +214,45 @@ class PrincipalList(Field):
         try:
             return set(principal_from_identifier(identifier,
                                                  allow_groups=self.allow_groups,
-                                                 allow_external_users=self.allow_external_users)
+                                                 allow_external_users=self.allow_external_users,
+                                                 allow_event_roles=self.allow_event_roles,
+                                                 event_id=self.event_id)
                        for identifier in value)
         except ValueError as exc:
             raise ValidationError(unicode(exc))
 
 
-class PrincipalPermissionList(Field):
-    """Marshmallow field for a list of principals and their permissions."""
+class PrincipalDict(PrincipalList):
+    # We need to keep identifiers separately since for pending users we
+    # can't get the correct one back from the user
+    def _deserialize(self, value, attr, data):
+        try:
+            return {identifier: principal_from_identifier(identifier,
+                                                          allow_groups=self.allow_groups,
+                                                          allow_external_users=self.allow_external_users,
+                                                          allow_event_roles=self.allow_event_roles,
+                                                          event_id=self.event_id,
+                                                          soft_fail=True)
+                    for identifier in value}
+        except ValueError as exc:
+            raise ValidationError(unicode(exc))
 
-    def __init__(self, principal_class, **kwargs):
+
+class PrincipalPermissionList(Field):
+    """Marshmallow field for a list of principals and their permissions.
+
+    :param principal_class: Object class to get principal permissions for
+    :param all_permissions: Whether to include all permissions, even if principal has full access
+    """
+
+    def __init__(self, principal_class, all_permissions=False, **kwargs):
         self.principal_class = principal_class
+        self.all_permissions = all_permissions
         super(PrincipalPermissionList, self).__init__(**kwargs)
 
     def _serialize(self, value, attr, obj):
-        return [(entry.principal.identifier, sorted(get_unified_permissions(entry))) for entry in value]
+        return [(entry.principal.identifier, sorted(get_unified_permissions(entry, self.all_permissions)))
+                for entry in value]
 
     def _deserialize(self, value, attr, data):
         try:
@@ -200,3 +287,22 @@ class HumanizedDate(Field):
             today = now_utc(False)
             number = int(m.group('number'))
             return today + relativedelta.relativedelta(**{HUMANIZED_UNIT_MAP[unit]: number})
+
+
+class FilesField(ModelList):
+    """Marshmallow field for a list of previously-uploaded files"""
+
+    default_error_messages = dict(ModelList.default_error_messages, **{
+        'claimed': 'File has already been claimed',
+    })
+
+    def __init__(self, allow_claimed=False, **kwargs):
+        from indico.modules.files.models.files import File
+        self.allow_claimed = allow_claimed
+        super(FilesField, self).__init__(model=File, column='uuid', column_type=UUID, **kwargs)
+
+    def _deserialize(self, value, attr, data):
+        rv = super(FilesField, self)._deserialize(value, attr, data)
+        if not self.allow_claimed and any(f.claimed for f in rv):
+            self.fail('claimed')
+        return rv

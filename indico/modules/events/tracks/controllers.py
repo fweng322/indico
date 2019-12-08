@@ -11,7 +11,6 @@ from io import BytesIO
 from operator import attrgetter, itemgetter
 
 from flask import flash, request
-from sqlalchemy.orm import subqueryload
 
 from indico.core.db.sqlalchemy.descriptions import RENDER_MODE_WRAPPER_MAP
 from indico.legacy.pdfinterface.conference import ProgrammeToPDF
@@ -141,8 +140,6 @@ class RHDisplayTracks(RHDisplayEventBase):
         program = RENDER_MODE_WRAPPER_MAP[render_mode](program)
         tracks = (Track.query.with_parent(self.event)
                   .filter(~Track.track_group.has())
-                  .options(subqueryload('conveners'),
-                           subqueryload('abstract_reviewers'))
                   .all())
         track_groups = self.event.track_groups
         items = sorted(tracks + track_groups,  key=attrgetter('position'))

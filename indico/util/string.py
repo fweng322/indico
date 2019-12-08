@@ -25,7 +25,7 @@ from uuid import uuid4
 import bleach
 import email_validator
 import markdown
-import translitcodec  # this is NOT unused. it needs to be imported to register the codec.
+import translitcodec  # noqa: F401 (this is NOT unused. it needs to be imported to register the codec)
 from html2text import HTML2Text
 from jinja2.filters import do_striptags
 from lxml import etree, html
@@ -276,6 +276,27 @@ def validate_email(email):
         return False
     else:
         return True
+
+
+def validate_email_verbose(email):
+    """Validate the given email address.
+
+    This checks both if it looks valid and if it has valid
+    MX (or A/AAAA) records.
+
+    :return: ``None`` for a valid email address, otherwise ``'invalid'`` or
+             ``'undeliverable'`` depending on whether the email address has
+             syntax errors or dns validation failed.
+    """
+    email = to_unicode(email)
+    try:
+        email_validator.validate_email(to_unicode(email))
+    except email_validator.EmailUndeliverableError:
+        return 'undeliverable'
+    except email_validator.EmailNotValidError:
+        return 'invalid'
+    else:
+        return None
 
 
 def validate_emails(emails):

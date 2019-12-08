@@ -10,14 +10,29 @@ import {useDispatch, useSelector} from 'react-redux';
 import {Form as FinalForm} from 'react-final-form';
 import {Button, Form} from 'semantic-ui-react';
 
+import UserAvatar from 'indico/modules/events/reviewing/components/UserAvatar';
 import {FinalDropdown, FinalSubmitButton, FinalTextArea} from 'indico/react/forms';
 import {Translate} from 'indico/react/i18n';
 
 import {addComment} from '../actions';
 import {canCommentPaper, getPaperDetails, getCurrentUser} from '../selectors';
-import UserAvatar from './UserAvatar';
 
 import './PaperReviewForm.module.scss';
+
+const visibilityOptions = [
+  {
+    value: 'judges',
+    text: Translate.string('Visible only to judges'),
+  },
+  {
+    value: 'reviewers',
+    text: Translate.string('Visible to reviewers and judges'),
+  },
+  {
+    value: 'contributors',
+    text: Translate.string('Visible to contributors, reviewers and judges'),
+  },
+];
 
 export default function PaperReviewForm() {
   const {
@@ -28,21 +43,6 @@ export default function PaperReviewForm() {
   const canComment = useSelector(canCommentPaper);
   const dispatch = useDispatch();
   const [commentFormVisible, setCommentFormVisible] = useState(false);
-
-  const visibilityOptions = [
-    {
-      value: 'judges',
-      text: Translate.string('Visible only to judges'),
-    },
-    {
-      value: 'reviewers',
-      text: Translate.string('Visible to reviewers and judges'),
-    },
-    {
-      value: 'contributors',
-      text: Translate.string('Visible to contributors, reviewers and judges'),
-    },
-  ];
 
   const onCommentClickHandler = () => {
     if (!commentFormVisible) {
@@ -81,6 +81,7 @@ export default function PaperReviewForm() {
                         onFocus={onCommentClickHandler}
                         name="comment"
                         rows={commentFormVisible ? 3 : 1}
+                        style={{resize: commentFormVisible ? 'vertical' : 'none'}}
                         placeholder={Translate.string('Leave a comment...')}
                         hideValidationError
                         required
